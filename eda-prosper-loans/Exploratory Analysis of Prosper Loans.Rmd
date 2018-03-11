@@ -1,0 +1,886 @@
+Exploratory Data Analysis of [Prosper.com](https://www.prosper.com) Loans
+========================================================
+### Rafael Buck
+
+
+## 1. Dados
+
+### 1.1 Sobre a [Prosper.com](https://www.prosper.com)
+
+A [Prosper.com](https://www.prosper.com) é uma empresa líder na indústria de empréstimos peer-to-peer online. Os mutuários criam perfis e listagens (solicita empréstimos) nos investidores da [Prosper.com](https://www.prosper.com) tanto indivíduos quanto instituições, veem a listagem (pedido de empréstimo do mutuário) e decidem quanto emprestar o mutuário para o empréstimo.
+
+As taxas de juros são tipicamente mais baixas para o mutuário do que para uma instituição financeira, como um banco. E vários investidores podem contribuir com o pedido de empréstimo de um mutuário, limitando o impacto global do risco do mutuário inadimplente no empréstimo para qualquer investidor e proporcionando um maior rendimento.
+
+Neste projeto, vou apresentar uma análise de dados exploratórios em um conjunto de dados que contém informações sobre empréstimos. Este conjunto de dados pertence a [Prosper.com](https://www.prosper.com) e contém 113.937 empréstimos com 81 variáveis em cada empréstimo.
+
+### 1.2 Why?
+
+A minha motivação para trabalhar com esses dados é meu grande interesse pessoal em avaliar características do setor financeiro. Também me motiva todas as questões de eficiência, como por exemplo, otimizar as operações financeiras de forma e ser lucrativa para os dois lados, tanto do tomador do empréstimo (com crédito mais acessível, a taxas menores) quanto do emprestador (maior rentabilidade e redução de riscos de inadimplência). Além disso, esse tipo de análise pode ser ampliado para outras áreas como, por exemplo, análise de crédito.
+
+```{r echo=FALSE, warning=FALSE, Work_directory}
+# Primeiro passo é dar uma olhada no diretório de trabalho.
+
+getwd()
+
+# Também é bom verificar se o arquivo necessário está lá para ser carregado.
+
+list.files()
+```
+
+### 1.3 Carregando os Dados e as Bibliotecas necessárias
+
+O arquivo de dados 'prosperLoanData.csv' está lá. Este conjunto de dados possui 113.937 empréstimos com 81 variáveis em cada um, incluindo o valor, taxa de juros, status do pagamento, receita do mutuário, seu emprego atual, histórico do cartão de crédito e informações sobre seu último pagamento. A última atualização foi em 11.03.2014. Este dicionário de variáveis explica as variáveis do conjunto de dados.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Carregamento de todos os pacotes utilizados 
+# na análise realizada neste arquivo fonte.
+
+# Note que o parâmetro "echo" foi definido como FALSE neste código.
+# Isso previne que o código apresente resultados formatados em HTML.
+# Foi definido echo=FALSE para todos os blocos de código no arquivo.
+
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(GGally)
+library(maps)
+
+```
+
+```{r echo=FALSE, warning=FALSE, Load_the_Data}
+# Carregamento dos dados.
+
+loans <- read.csv('prosperLoanData.csv')
+```
+
+### 1.4 Estrutura do conjunto de Dados
+
+Abaixo um sumário da estrutura do arquivo de dados da [Prosper.com](https://www.prosper.com).
+
+```{r echo=FALSE, warning=FALSE, Dataframe_info}
+# Essa funçao fornece uma visão compacta da estrutura de um objeto em R, 
+# alternativamente à função summary().
+
+str(loans)
+
+# Algumas variáveis são do tipo Factor. Seria legal darmos uma olhada em uma 
+# das principais.
+# Essa função revela os níveis do atributo passado como parâmetro.
+
+levels(loans$LoanStatus)
+```
+
+#### 1.4.1 Principais variáveis que serão utilizadas na análise
+
+Aqui são listadas as principais variáveis que serão analisadas.
+
+**Term**: Duração do empréstimo em meses.
+
+**LoanStatus**: Status atual do empréstimo:
+
+- Cancelled
+- Chargedoff
+- Completed
+- Current
+- Defaulted
+- FinalPaymentInProgress
+- PastDue (acompanha um bucket de período de inadimplência)
+
+**BorrowerState**: Estado do mutuário abreviado com duas letras.
+
+**ListingCategory**: Motivo do empréstimo segundo o mutuário.
+
+- 0 - Not Available
+- 1 - Debt Consolidation
+- 2 - Home Improvement
+- 3 - Business
+- 4 - Personal Loan
+- 5 - Student Use
+- 6 - Auto
+- 7 - Other
+- 8 - Baby&Adoption
+- 9 - Boat
+- 10 - Cosmetic Procedure
+- 11 - Engagement Ring
+- 12 - Green Loans
+- 13 - Household Expenses
+- 14 - Large Purchases
+- 15 - Medical/Dental
+- 16 - Motorcycle
+- 17 - RV
+- 18 - Taxes
+- 19 - Vacation
+- 20 - Wedding Loans
+
+```{r echo=FALSE, warning=FALSE, Data_wrangling}
+# Aqui vamos fazer então o seguinte: da forma como está (numérico) não será 
+# muito interessante para visualizar e explorar.
+# Então vamos transformar essas variáveis numéricas em variáveis categóricas.
+
+loans$ListingCategory <- factor(loans$ListingCategory..numeric., 
+                                labels = c("Not Available", 
+                                         "Debt Consolidation", 
+                                         "Home Improvement", 
+                                         "Business", 
+                                         "Personal loan", 
+                                         "Student Use", 
+                                         "Auto", 
+                                         "Other", 
+                                         "Baby & Adoption", 
+                                         "Boat", 
+                                         "Cosmetic Procedures", 
+                                         "Engagement Ring", 
+                                         "Green Loans", 
+                                         "Household Expenses", 
+                                         "Large Purchases", 
+                                         "Medical/Dental", 
+                                         "Motorcycle", 
+                                         "RV", 
+                                         "Taxes", 
+                                         "Vacation", 
+                                         "Wedding Loans"))
+
+# Checar ver se deu certo :D
+
+levels(loans$ListingCategory)
+```
+
+**CreditScoreRangeLower**: O menor valor que representa o alcance da pontuação de crédito do mutuário conforme fornecido por uma agência de rating de crédito ao consumidor.
+
+**CreditScoreRangeUpper**: o valor superior que representa o alcance da pontuação de crédito do mutuário conforme fornecido por uma agência de rating de crédito ao consumidor.
+
+**LoanOriginalAmount**: Valor original do empréstimo.
+
+**Investors**: Número de investidores que financiam o empréstimo.
+
+**CloseDate**: Data de fechamento do empréstimo.
+
+#### 1.4.2 Variáveis adicionais, para trabalhos futuros
+
+Aqui são listadas outras variáveis que também são interessantes, mas que serão deixadas para um trabalho futuro.
+
+**BankcardUtilization**: a porcentagem de crédito rotativo disponível que é utilizado no momento em que o perfil de crédito foi puxado.
+
+**IncomeRange**: a porcentagem de crédito rotativo disponível que é utilizado no momento em que o perfil de crédito foi puxado.
+
+**ListingCreationDate**: a data em que o regisro foi criado.
+
+**Occupation**: ocupação selecionada pelo mutuário no momento da criação do registro.
+
+**IsBorrowerHomeowner**: esse eu achei interessante, é quando um mutuário tem uma hipoteca em seu perfil de crédito ou fornece documentação confirmando que eles é um proprietário de uma casa.
+
+**BorrowerAPR**: taxa de percentagem anual do avalista.
+
+**BorrowerRate**: taxa de juros do mutuário para este empréstimo.
+
+**Recommendations**: número de recomendações que o mutuário teve no momento em que o registro foi criado.
+
+**TotalProsperLoans**: número de empréstimos da [Prosper.com](https://www.prosper.com) do mutuário no momento da criação do registro. Esse valor será NULL se o mutuário não tiver empréstimos prévios.
+
+**DebtTocomeRatio**: o índice dívida.
+
+**StatedMonthlyIncome**: a renda mensal que o mutuário declarou no momento em o registro foi criado.
+
+```{r echo=FALSE, warning=FALSE, Slice_Dataframe}
+# Vamos focar então nas variáveis de interesse. 
+# É importante criar um subconjunto para ter mais desempenho nas análises.
+# Essa função criará um subconjunto de dados com as variáveis de interesse.
+
+columns <- c('Term'
+              ,'LoanStatus'
+              ,'BorrowerState'
+              ,'ListingCategory'
+              ,'CreditScoreRangeLower'
+              ,'CreditScoreRangeUpper'
+              ,'LoanOriginalAmount'
+              ,'Investors'
+              ,'ClosedDate')
+
+# Sampling the original dataset so it can be used in a correlation matrix.
+loans_subset <- loans[ , columns]
+```
+
+## 2. Gráficos e Análises
+
+### 2.1 Seção de Gráficos Univariados
+
+#### 2.1.1 Histograma de duração de empréstimos
+
+Aqui é interessante ver a quantidade de emprestimos com 36 meses de duração são aqueles que mais foram realizados. Também é interessante perceber que a [Prosper.com](https://www.prosper.com) parece atrair empréstimos de curta duração 12-60 meses no máximo.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plots}
+# Plot do número de empréstimos por Tempo de empréstimo.
+
+ggplot(aes(x = Term), data = loans_subset) + geom_bar(fill = "purple") + 
+  scale_x_continuous(limits = c(1, 70), breaks = seq(12, 60, 24)) +
+  # Ajeitando o gráfico.
+  ggtitle("Loan Time") +
+  labs(x = "Loan Time", y = "Number of Loans") +
+  theme(text = element_text(size = 11))
+
+# Tabela com o número de empréstimos por Tempo de empréstimo.
+
+table(loans_subset$Term)
+```
+
+#### 2.1.2 Empréstimos por Estado
+
+Vamos dar uma olhada em empréstimos por Estado.
+
+```{r echo=FALSE, warning=FALSE}
+# Plot do número de empréstimos por Estado.
+
+ggplot(aes(x = BorrowerState), data = loans_subset) + 
+  geom_bar(fill = "purple") + 
+  theme(axis.text.x = element_text(angle = 90)) +
+  # Ajeitando o gráfico.
+  ggtitle("Loan by State") +
+  labs(x = "State", y = "Number of Loans") +
+  theme(text = element_text(size = 11))
+
+# Tabela com o número de empréstimos por Estado.
+
+table(loans_subset$BorrowerState)
+```
+
+Talvez fique mais interessante colocar em um mapa, ao invés de hitograma. No entanto, pelo histograma é possível observar um ponto negativo: é que mais de 5.000 empréstimos não especificam em que estado do mutuário.
+
+```{r echo=FALSE, warning=FALSE}
+#'x' é a coluna do dataframe que contém a abreviação de 2 dígitos dos estados.
+
+stateFromLower <- function(x) {
+  
+  # Código dos 52 estados [inclui DC (Washington D.C. e PR (Puerto Rico)].
+  st.codes <- data.frame(state = as.factor(c("AK", "AL", "AR", "AZ", "CA", "CO", 
+                                             "CT", "DC", "DE", "FL", "GA", "HI", 
+                                             "IA", "ID", "IL", "IN", "KS", "KY", 
+                                             "LA", "MA", "MD", "ME", "MI", "MN", 
+                                             "MO", "MS",  "MT", "NC", "ND", 
+                                             "NE", "NH", "NJ", "NM", "NV", "NY", 
+                                             "OH", "OK", "OR", "PA", "PR", "RI", 
+                                             "SC", "SD", "TN", "TX", "UT", "VA", 
+                                             "VT", "WA", "WI", "WV", "WY")),
+                         full = as.factor(c("alaska", "alabama", "arkansas", 
+                                            "arizona", "california", "colorado", 
+                                            "connecticut", 
+                                            "district of columbia", "delaware", 
+                                            "florida", "georgia", "hawaii",
+                                            "iowa", "idaho", "illinois", 
+                                            "indiana", "kansas", "kentucky", 
+                                            "louisiana", "massachusetts", 
+                                            "maryland", "maine", "michigan", 
+                                            "minnesota", "missouri", 
+                                            "mississippi", "montana", 
+                                            "north carolina", "north dakota", 
+                                            "nebraska", "new hampshire", 
+                                            "new jersey", "new mexico", 
+                                            "nevada", "new york", "ohio",
+                                            "oklahoma", "oregon", 
+                                            "pennsylvania", "puerto rico", 
+                                            "rhode island", "south carolina", 
+                                            "south dakota", "tennessee", 
+                                            "texas", "utah", "virginia", 
+                                            "vermont", "washington", 
+                                            "wisconsin", "west virginia", 
+                                            "wyoming"))
+                       )
+  # Cria um dataframe dos códigos dos estados 
+  st.x <- data.frame(state=x)
+  # Match dos códigos retornando o nome do estado
+  refac.x <- st.codes$full[match(st.x$state, st.codes$state)]
+  return(refac.x)
+}
+
+# Cria uma nova coluna com o nome do estado
+loans_subset$state <- stateFromLower(loans_subset$BorrowerState)
+```
+
+
+```{r echo=FALSE, warning=FALSE, fig.width=9, fig.height=5}
+## Agrupa o número de empréstimos por estado.
+
+loans_by_state <- group_by(loans_subset, state)
+loans_by_state <- summarize(loans_by_state, 
+                            loans_count = n())
+
+# Carrega um dataframe do R dos estados norte americanos.
+
+data(state)
+
+# Faz um slice para separar apenas a abreviação e o ponto central, para usarmos 
+# como legenda.
+
+states <- data.frame(state.abb, state.center)
+
+# Carrega os limites dos estados.
+
+map <- map_data("state")
+
+# Faz merge de states com loans_by_state.
+
+map <- merge(map, loans_by_state, by.x = c("region"), by.y = c("state"), 
+             all.x = TRUE)
+
+# Finalmente, faz o plot do mapa :D
+
+ggplot(aes(x = long, y = lat, group = group), data = map) +
+    geom_polygon(aes(fill = loans_count)) +
+    # Centraliza a abreviação do estado
+    geom_text(data = states, 
+              aes(x = x, y = y, label = state.abb, group = NULL), 
+              size = 3, 
+              colour = "black") +
+    # Ajeitando o gráfico.
+    scale_fill_gradient("Number of Loans", low = "ivory", high = "purple") +
+    ggtitle("Loan by State") +
+    labs(x = "Longitude", y = "Latitude") +
+    theme(text = element_text(size = 11))
+```
+
+Isso deu um pouco de trabalho, mas é legal para verificarmos o posicionamento estratégico da [Prosper.com](https://www.prosper.com) geoespacialmente. Como vemos, o Estado da Califórnia é o com maior número de empréstimos, o que faz bastante sentido já que a empresa é de lá. Outros estados como Texas, Nova York, Illinois e Flórida também se destacam.
+
+##### 2.1.2.1 Fiquei curioso pelos empréstimos sem BorrowerState definido
+
+Acabei ficando curioso pelos empréstimos sem BorrowerState definido, vou dar uma olhada nas característica desses empréstimos
+
+```{r echo=FALSE, warning=FALSE}
+# Seleciona apenas aqueles registros onde state == NULL.
+
+loans_without_state <- subset(loans_subset, is.na(loans_subset$state))
+summary(loans_without_state)
+
+# Aqui é possível decomentar para dar uma olhada no perfil da data de 
+# fechamentodos registros (basta descomentar o comando abaixo)
+# table(loans_without_state$ClosedDate)
+```
+
+Como podemos verificar, a maioria dos empréstimos sem Estado definido foram completos (*Completed*), ou cobrados por fora (*Chargedoff*, provavelmente judicialmente ou por acordo). Todos de 36 meses, com uma média de $3.600,00 de valor original de empréstimo e a grande maioria não especificou o que faria com o empréstimo (*Not Available*).
+
+Olhando a data de fechamento (*ClosedDate*), percebe-se que esses registros são de 2005 a 2009. Depois disso não há mais ocorrência. O que é bom. Provavelmente a [Prosper.com](https://www.prosper.com) introduziu algum campo de validação ou adicional a seu sistema para tornar obrigatório a especificação do Estado.
+
+#### 2.1.3 Empréstimos por Categoria (Propósito)
+
+```{r echo=FALSE, warning=FALSE}
+# Plot do número de empréstimos por Categoria.
+
+ggplot(aes(x = ListingCategory), data = loans_subset) + 
+  geom_bar(fill = "purple") + 
+  theme(axis.text.x = element_text(angle = 90)) +
+  # Ajeitando o gráfico.
+  ggtitle("Loan by Purpose") +
+  labs(x = "Loan Purpose", y = "Number of Loans") +
+  theme(text = element_text(size = 11))
+
+# Tabela com o número de empréstimos por Categoria.
+
+table(loans_subset$ListingCategory)
+```
+
+É interessante observar aqui que a grande maioria declara que pega dinheiro empresatado para quitar outros débitos. Novamente, muitos valores sem definir o porpósito específico do empréstimo: *Not available* e *Other* (que acaba tendo o mesmo significado de *Other* :P).
+
+#### 2.1.4 Histograma do número de empréstimos por valor total
+
+Agora vamos verificar o número de empréstimos pelo valor total do empréstimo.
+
+```{r echo=FALSE, warning=FALSE}
+# Plot do total de empréstimos por Estado.
+ggplot(aes(x = LoanOriginalAmount), data = loans_subset) + 
+  geom_histogram(binwidth = 1500, fill = "purple", color = 'white') +
+  # Ajeitando o gráfico.
+  ggtitle("Loan by Original Amount") +
+  labs(x = "Loan Amount", y = "Number of Loans") +
+  theme(text = element_text(size = 11))
+
+summary(loans_subset$LoanOriginalAmount)
+sum(loans_subset$LoanOriginalAmount)
+
+```
+
+Olhando o gráfico e a tabela, percebemos que o ticket médio é de $8.337,00, 75% dos empréstimos são de $1.000,00 a $12.000,00.
+
+#### 2.1.5 Histograma do número de empréstimos por número de investidores
+
+Por fim, vamos dar uma verificada no número de investidores por empréstimo.
+
+```{r echo=FALSE, warning=FALSE}
+# Plot do total de investidor por empréstimo.
+ggplot(aes(x = Investors), data = loans_subset) + 
+  geom_histogram(binwidth = 10, fill = "purple", color = 'white') +
+  # Ajeitando o gráfico.
+  ggtitle("Loan by Investors per Loan") +
+  labs(x = "Number of Investors per Loan", y = "Number of Loans") +
+  theme(text = element_text(size = 11))
+
+summary(loans_subset$Investors)
+
+```
+
+Interessante ver que 25% do total dos empréstimos é realizado por 1 ou dois investidores e 75% dos empréstimos por até 115 investidores. Existem empréstimos com até 1.189 investidores, no entanto, a maioria deles é realizada por 1.
+
+### 2.2 Seção de Gráficos Bivariados
+
+#### 2.2.1 Qual Estado recebeu a maior quantidade de empréstimos?
+
+Vamos dar uma olhada no total de empréstimos (em volume de dinheiro) tomados por Estado.
+
+```{r echo=FALSE, warning=FALSE, fig.width=9, fig.height=5}
+
+## Agrega o total de empréstimos por Estado.
+
+loans_by_value <- aggregate(loans_subset$LoanOriginalAmount, 
+                            by = list(state = loans_subset$state), 
+                            FUN = sum)
+
+# Carrega os limites dos estados.
+
+map <- map_data("state")
+
+# Faz merge de states com loans_by_state
+
+map <- merge(map, loans_by_value, by.x = c("region"), by.y = c("state"), 
+             all.x = TRUE)
+
+# Finalmente, faz o plot do mapa :D
+
+ggplot(aes(x = long, y = lat, group = group), data = map) +
+    geom_polygon(aes(fill = x)) +
+    # Centraliza a abreviação do estado
+    geom_text(data = states, 
+              aes(x = x, y = y, label = state.abb, group = NULL), 
+              size = 3, 
+              colour = "black") +
+    scale_fill_gradient("Total Loan by State", low = "ivory", high = "purple") +
+    # Ajeitando o gráfico.
+    ggtitle("Loan Amount by State") +
+    labs(x = "Longitude", y = "Latitude") +
+    theme(text = element_text(size = 11))
+
+```
+
+Novamente, estados como Texas, Nova York, Illinois e Flórida também se destacam, além é claro da Califórnia. No período analisado, cerca de $132,075.153 foram emprestados em CA de um total de $949.894.347 nos EUA inteiro (CA representa 13,9% do total emprestado nos EUA). A [Prosper.com](https://www.prosper.com) nesse período quase atingiu 1 bilhão em empréstimos.
+
+#### 2.2.2 Qual Estado recebeu a maior quantidade de investidores?
+
+```{r echo=FALSE, warning=FALSE, fig.width=9, fig.height=5}
+
+## Agrega o total de empréstimos por estado.
+
+loans_by_investors <- aggregate(loans_subset$Investors, 
+                                by = list(state = loans_subset$state), 
+                                FUN = sum)
+
+# Carrega os limites dos estados.
+
+map <- map_data("state")
+
+# Faz merge de states com loans_by_state.
+
+map <- merge(map, loans_by_investors, by.x = c("region"), by.y = c("state"), 
+             all.x = TRUE)
+
+# Finalmente, o plot do mapa :D
+
+ggplot(aes(x = long, y = lat, group = group), data = map) +
+    geom_polygon(aes(fill = x)) +
+    # Centraliza a abreviação do estado
+    geom_text(data = states, 
+              aes(x = x, y = y, label = state.abb, group = NULL), 
+              size = 3, 
+              colour = "black") +
+    scale_fill_gradient("Investors by State", low = "ivory", high = "purple") +
+    # Ajeitando o gráfico
+    ggtitle("Loan Investors by State") +
+    labs(x = "Longitude", y = "Latitude") +
+    theme(text = element_text(size = 11))
+
+```
+
+Novamente, interessante ver que os mesmos estados também possuem maiores números de investidores. Aqui não há distinção se um mesmo investidor emprestou x vezes no mesmo estado ou em mais estados. Apenas representa o número de vezes que investidores emprestaram dinheiro (ou seja, um único investidor pode ter participado de 100 empréstimos em CA e 50 em NY, a contagem total desse gráfico considera que ele emprestou 150 vezes).
+
+#### 2.2.3 Utilizando ggpairs para observar outras variáveis de interesse
+
+Antes de avançar para análise com gráficos bivariados, vamos utilizar a função **ggpairs** para gerar uma matriz com mu subset do dataframe. Foram utilizadas 1.000 amostras para não demorar muito.
+
+```{r echo=FALSE, warning=FALSE, Bivariate_Plots, fig.width=10, fig.height=10}
+
+# Set a seed
+theme_set(theme_minimal(20))
+
+# Variáveis de interesse para investigar correlação.
+# LoanStatus e ListingCategory foram retirados para visualização (categóricas)
+columns <- c('Term', 'CreditScoreRangeLower', 'CreditScoreRangeUpper', 
+             'LoanOriginalAmount', 'Investors')
+
+# Gerando matriz com plots das variáveis de interesse
+# Vamos colocar apenas 1000 amostras para não demorar muito
+
+loanData_subset <- loans[ , columns]
+
+ggpairs(loanData_subset[sample.int(nrow(loanData_subset), 1000), ]) +
+  theme(text = element_text(size = 11))
+
+```
+
+Podemos verificar que os scores de crédito, **CreditScoreRangeUpper** e **CreditScoreRangeLower**, apresentam uma impressionante correlação de 1. É também possível ver que o gráfico entre essas duas variáveis é praticamente uma reta. Os scores de crédito possuem uma correlação significante com **LoanOriginalAmount**, assim como com *Investors*. Por fim, chamou a atenção a correlação entre **LoanOriginalAmount** e *Investors*. Vamos investigar isso adiante.
+
+#### 2.2.4 Qual a relação entre a quantidade emprestada e scores?
+
+Uma coisa que interessou foi a relação entre **LoanOriginalAmount** com **CreditScoreRangeUpper** e **CreditScoreRangeLower**. Pra isso, vamos colocar os dois em um mesmo grid para comparar.
+
+```{r echo=FALSE, warning=FALSE}
+
+# Gerando matriz com plots das variáveis de interesse.
+
+columns <- c('Term', 'CreditScoreRangeLower', 'CreditScoreRangeUpper', 
+             'BankcardUtilization', 'LoanOriginalAmount', 'Investors', 
+             'LoanStatus', 'ListingCategory')
+
+loanData_subset <- loans[ , columns]
+
+```
+
+```{r echo=FALSE, warning=FALSE}
+
+# Gera o plot de LoanOriginalAmount por CreditScoreRangeUpper.
+
+p1 <- ggplot(aes(x = CreditScoreRangeUpper, y = LoanOriginalAmount), 
+             data = loans_subset) +
+  geom_point(alpha = 1/50, color = 'purple') +
+  # Ajeitando o gráfico.
+  ggtitle("Loan Amount by Credit Score") +
+  labs(x = "Credit Score Upper", y = "Loan Amount") +
+  theme(text = element_text(size = 11))
+
+# Gera o plot de LoanOriginalAmount por CreditScoreRangeLower.
+
+p2 <- ggplot(aes(x = CreditScoreRangeLower, y = LoanOriginalAmount), 
+             data = loans_subset) +
+  geom_point(alpha = 1/50, color = 'purple') +
+  ggtitle("Loan Amount by Credit Score") +
+  labs(x = "Credit Score Lower", y = "Loan Amount") +
+  theme(text = element_text(size = 11))
+
+# Coloca em um grid de dois elementos.
+
+grid.arrange(p1, p2, ncol = 2)
+```
+
+É possível observar que **LoanOriginalAmount** aumenta quand **CreditScoreRangeUpper** e **CreditScoreRangeLower** aumentam. No entanto, é possível observar que também tem um grupo de alto risco que opera empréstimos na [Prosper.com](https://www.prosper.com), com **CreditScoreRangeUpper** e **CreditScoreRangeLower** baixos, mas com **LoanOriginalAmount** abaixo dos $10.000. 
+
+```{r echo=FALSE, warning=FALSE}
+# Gera o plot de CreditScoreRangeUpper por CreditScoreRangeLower.
+# com a função geom_smooth(method = "lm"), gera a linha 
+# com uma regressão linear.
+
+ggplot(aes(x = CreditScoreRangeLower, y = CreditScoreRangeUpper), 
+       data = loans_subset) +
+  geom_point(alpha = 1/50, color = 'purple') +
+  geom_smooth(method = "lm") +
+  # Ajeitando o gráfico.
+  ggtitle("Correlation between Credit Scores") +
+  labs(x = "Credit Score Range Lower", y = "Credit Score Range Upper") +
+  theme(text = element_text(size = 11))
+
+# Função que testa a correlação entre duas variáveis.
+# Vamos usar o método default mesmo "pearson".
+# Aqui tem uma explicação com cada método 
+# http://www.statisticssolutions.com/correlation-pearson-kendall-spearman/
+
+cor.test(x = loans_subset$CreditScoreRangeLower, 
+         y = loans_subset$CreditScoreRangeUpper)
+```
+
+Como o gráfico é praticamente igual, e a relação entre **CreditScoreRangeUpper** e **CreditScoreRangeLower** é linear (essa é uma relação muito forte, com altíssima correlação, conforme gráfico acima), vamos utilizar daqui para frente somente o **CreditScoreRangeUpper** para a análise multivariada, baseando-se no gráfico abaixo.
+
+```{r echo=FALSE, warning=FALSE}
+# Gera o plot de LoanOriginalAmount por CreditScoreRangeUpper
+
+ggplot(aes(x = CreditScoreRangeUpper, y = LoanOriginalAmount), 
+       data = loans_subset) +
+  geom_point(alpha = 1/50, color = 'purple') +
+  # Ajeitando o gráfico
+  ggtitle("Loan Amount by Credit Score") +
+  labs(x = "Credit Score", y = "Loan Amount") +
+  theme(text = element_text(size = 11))
+```
+
+#### 2.2.5 Qual a relação entre a quantidade emprestada e número de investidores?
+
+Por fim, vamos verificar se há relação no número de investidores por empréstimo, e o valor total do empréstimo.
+
+```{r echo=FALSE, warning=FALSE}
+# Gera o plot de Investors por LoanOriginalAmount
+# com a função geom_smooth(method = "lm"), gera a linha 
+# com uma regressão linear.
+
+ggplot(aes(x = Investors, y = LoanOriginalAmount), data = loans_subset) +
+  geom_point(alpha = 1/50, color = 'purple') +
+  geom_smooth(method = "lm") +
+  # Ajeitando o gráfico.
+  ggtitle("Loan Amount by Investors") +
+  labs(x = "Investors", y = "Loan Amount") +
+  theme(text = element_text(size = 11))
+
+# Função que testa a correlação entre duas variáveis.
+# Vamos usar o método default mesmo "pearson".
+
+cor.test(x = loans_subset$Investors, y = loans_subset$LoanOriginalAmount)
+
+```
+
+Até que há uma correlação. No entanto, essa correlação é fraca (pois seu valor absoluto está entre 0,3 e 0,5). Na verdade, pelo gráfico, parace que existem pelo menos 4 linhas horizontais de crédito que atraem de 1 a 500 investidores (em y = $25.000, $20.000, $15.000 e $10.000) e uma linha vertical com investidores individuais que empresta de $1.000 até $35.000. Isso poderia ser útil para analisar as carteiras de empréstimos mais requisitadas (ou disponibilizadas na [Prosper.com](https://www.prosper.com)) e segmentos de investidores.
+
+#### 2.2.6 Qual a relação entre a score de crédito e número de investidores?
+
+```{r echo=FALSE, warning=FALSE}
+# Gera o plot de Investors por CreditScoreRangeUpper.
+# com a função geom_smooth(method = "lm"), gera a linha 
+# com uma regressão linear.
+
+ggplot(aes(x = Investors, y = CreditScoreRangeUpper), data = loans_subset) +
+  geom_point(alpha = 1/50, color = 'purple') +
+  geom_smooth(method = "lm") +
+  # Ajeitando o gráfico.
+  ggtitle("Credit Score Range Upper by Investors") +
+  labs(x = "Investors", y = "Credit Score Range") +
+  theme(text = element_text(size = 11))
+
+# Função que testa a correlação entre duas variáveis.
+# Vamos usar o método default mesmo "pearson".
+
+cor.test(x = loans_subset$Investors, y = loans_subset$CreditScoreRangeUpper)
+
+```
+
+Esse último gráfico representa a correlação entre **CreditScoreRangeUpper** e **Investors**. Faz sentido o número de investidores aumentar com o aumento do score de crédito, uma vez que é um negócio baseado na confiança de que o mutuário vai quitar o empréstimo. 
+
+### 2.3 Seção de Gráficos Multivariados
+
+#### 2.3.1 Porque as pessoas pegam dinheiro emprestado da [Prosper.com](https://www.prosper.com)?
+
+A ideia aqui é explorar a relação entre o status do empréstimo com o propósito dele e com o volume do empréstimo. Ou seja, pessoas que pegam empréstimo de cerca de $30.000 para seus negócios (Business), costumam ter quais status? Para ter uma visão disso, o gráfico abaixo procura ilustrar essa relação.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plots}
+# Gera o plot.
+
+ggplot(aes(x = LoanStatus, y = ListingCategory, fill = LoanOriginalAmount), 
+       data = loans_subset) +
+  geom_tile() +
+  scale_fill_gradientn("Loan Original Amount",
+                       colours = colorRampPalette(c("ivory", "purple"))(100)) +
+  theme(axis.text.x = element_text(angle = 90, size = 9), 
+        axis.text.y = element_text(size = 9)) +
+  # Ajeitando o gráfico.
+  ggtitle("Loan Purpose by Loan Status by Original Amount") +
+  labs(x = "Loan Status", y = "Loan Purpose") +
+  theme(text = element_text(size = 11))
+```
+
+De fato, interessante. Note que empréstimos para férias (Vacation) de valor alto costumam apresentar inadimplência de 1 a 2 meses. É possível verificar outras relações interessantes. Na seção seguinte vamos melhorar esse gráfico para visualizar melhor a relação entre essas variáveis.
+
+#### 2.3.2 Qual a relação entre score e investidor com inadimplentes e total de valor de empréstimo?
+
+Aqui, a ideia é agrupar todos os inadimplentes: 'Defaulted','Chargedoff','Past Due (61-90 days)','Past Due (91-120 days)','Past Due (>120 days)' em maus mutuários e o restante como bons mutuários.
+
+```{r echo=FALSE, warning=FALSE}
+# Para essa análise, é necessário criar uma nova coluna, uma espécie de target 
+# (se pensar em algoritmos supervisionados de machine learning).
+
+loans_subset$DelinquentBorrowers <- ifelse(
+                                      loans_subset$LoanStatus == "Defaulted" |
+                                      loans_subset$LoanStatus == "Chargedoff" |
+                                      loans_subset$LoanStatus == "Past Due (61-90 days)" |
+                                      loans_subset$LoanStatus == "Past Due (91-120 days)" |
+                                      loans_subset$LoanStatus == "Past Due (>120 days)",
+                                      'Delinquent', 'Good')
+```
+
+
+```{r echo=FALSE, warning=FALSE}
+# Gera o plot, agora com apenas duas categorias de mutuário.
+
+ggplot(aes(x = DelinquentBorrowers, y = ListingCategory, 
+           fill = LoanOriginalAmount), data = loans_subset) +
+  geom_tile() +
+  scale_fill_gradientn("Loan Original Amount", 
+                       colours = colorRampPalette(c("ivory", "purple"))(100)) +
+  theme(axis.text.x = element_text(size = 11), 
+        axis.text.y = element_text(size = 10)) +
+  # Ajeitando o gráfico.
+  ggtitle("Loan Purpose by Borrower Status by Original Amount") +
+  labs(x = "Borrower Status", y = "Loan Purpose") +
+  theme(text = element_text(size = 11))
+
+# Gera o plot, agora com apenas duas categorias de mutuário.
+
+ggplot(aes(x = Investors, y = LoanOriginalAmount), data = loans_subset) +
+  geom_point(aes(color = DelinquentBorrowers), alpha = 1/10) + 
+  # Ajeitando o gráfico
+  ggtitle("Loan Amount by Investors by Borrower Status") +
+  labs(x="Investors", y="Loan Amount") +
+  theme(text = element_text(size=11))
+
+# Gera o plot, agora com apenas duas categorias de mutuário.
+
+ggplot(aes(x = CreditScoreRangeUpper, y = LoanOriginalAmount), 
+       data = loans_subset) +
+  geom_point(aes(color = DelinquentBorrowers), alpha = 1/10) +
+  # Ajeitando o gráfico.
+  ggtitle("Loan Amount by Credit Score by Borrower Status") +
+  labs(x = "Credit Score", y = "Loan Amount") +
+  theme(text = element_text(size = 11))
+
+table(loans_subset$DelinquentBorrowers)
+```
+
+O primeiro gráfico (Loan Purpose by Borrower Status by Original Amount) é possível observar para que propósitos os empréstimos são realizados e quais suas características de inadimplência. 
+
+Nele observamos que os empréstimos realizados com o propósito de compras de barco (*Boat*) e pagamento de férias (*Vacation*), há uma maior quantidade de valores emprestados por maus mutuários do que bons mutuários, enquanto que empréstimos realizados com o propósito de pagamentos de impostos (*Taxes*), motocicletas (*Motorcycle*) e reformas (*House Improvement*), há uma maior quantidade de valores emprestados por bons mutuários do que maus mutuários.
+
+Ainda, para uso em *Business* temos os maiores valores, enquanto que para *Debt Consolidation* temos empréstimos maiores (apesar desse último ser o tipo de empréstimo que a [Prosper.com](https://www.prosper.com) mais realiza). Esse modelo será excelente para, em trabalhos futuros, utilizar machine learning para classificação dos empréstimos para algoritmos de métodos supervisionados. 
+
+O último gráfico (Loan Amount by Credit Score by Borrower Status) também indica a possíbilidade de se utilizar certas variáveis em algoritmos de métodos não-supervisionados, de forma a clusterizar os empréstimos. Por exemplo, mutuários com score próximo de 0 e próximo de 500 para empréstimos de $10.000 e próximo de 600 para empréstimos próximos de $20.000 tem boa chance de ser inadimplentes. 
+
+O segundo gráfico acabou não mostrando relação entre o número de investidores no empréstimo com a inadimplência.
+
+------
+
+## 3. Gráficos Finais
+
+### 3.1 Primeiro Gráfico
+
+```{r echo=FALSE, warning=FALSE, Plot_One, fig.width=9, fig.height=5}
+# Gráfico Valor por estado
+# Agrega o total de empréstimos por estado
+
+loans_by_value <- aggregate(loans_subset$LoanOriginalAmount, 
+                            by = list(state = loans_subset$state), 
+                            FUN = sum)
+
+# Carrega os limites dos estados
+
+map <- map_data("state")
+
+# Faz merge de states com loans_by_state
+
+map <- merge(map, loans_by_value, by.x = c("region"), by.y = c("state"), 
+             all.x = TRUE)
+
+# Finalmente, o plot do mapa :D
+
+ggplot(aes(x = long, y = lat, group = group), data = map) +
+    geom_polygon(aes(fill = x)) +
+    # Centraliza a abreviação do estado.
+    geom_text(data = states, aes(x = x, y = y, label = state.abb, group = NULL), 
+              size = 3, 
+              colour = "black") +
+    scale_fill_gradient("Total Loan by State (USD)", 
+                        low = "ivory", 
+                        high = "purple") +
+    # Ajeitando o gráfico
+    ggtitle("Loan Amount by State (USD)") +
+    labs(x = "Longitude (degree)", y = "Latitude (degree)") +
+    theme(text = element_text(size = 11))
+
+```
+
+Conforme comentado, as operações da [Prosper.com](https://www.prosper.com) estão concentradas no Estado da Califórnia (13,9% de todos os empréstimos realizados no período). No entanto, estados como Texas, Nova York, Illinois e Flórida também se destacam. Isso indica que um estudo de viabilidade de abertura de um escritório da [Prosper.com](https://www.prosper.com) na costa leste pode indicar uma forma de crescer as operações nesses estados, assim como acontece em CA.
+
+### 3.2 Segundo Gráfico
+```{r echo=FALSE, warning=FALSE, Plot_Two}
+# Heat map de propósito do empréstimo por status por quantidade de empréstimo.
+
+ggplot(aes(x = DelinquentBorrowers, y = ListingCategory, 
+           fill = LoanOriginalAmount), data = loans_subset) +
+  geom_tile() +
+  scale_fill_gradientn("Loan Original Amount", 
+                       colours = colorRampPalette(c("ivory", "purple"))(100)) +
+  theme(axis.text.x = element_text(size = 11), 
+        axis.text.y = element_text(size = 10)) +
+  # Ajeitando o gráfico
+  ggtitle("Loan Purpose by Borrower Status by Original Amount") +
+  labs(x = "Borrower Status", y = "Loan Purpose") +
+  theme(text = element_text(size = 11))
+
+```
+
+Aqui é possível observar para que propósitos os empréstimos são realizados e quais suas características de inadimplência. Por exemplo, para uso em Business temos os maiores valores, enquanto que para Debt Consolidation temos empréstimos maiores (apesar desse último ser o tipo de empréstimo que a [Prosper.com](https://www.prosper.com) mais realiza). Conforme comentado anteriormente, nele observamos que os empréstimos realizados com o propósito de compras de barco (*Boat*) e pagamento de férias (*Vacation*), há uma maior quantidade de valores emprestados por maus mutuários do que bons mutuários, enquanto que empréstimos realizados com o propósito de pagamentos de impostos (*Taxes*), motocicletas (*Motorcycle*) e reformas (*House Improvement*), há uma maior quantidade de valores emprestados por bons mutuários do que maus mutuários.
+
+É interessante ver como 3 dimensões formam uma espécie de "assinatura" de empréstimos que resultaram em inadimplência e de empréstimos que estão okey. Exelente para utilizar com machine learning, seja para clusterizar empréstimos em certas categorias, seja para criar modelos preditivos para indicar se um futuro empréstimo para um mutuário tem potencial de não ser pago ou de ser pago. Po exemplo, se uma solução de machine learning fosse usada apenas com base nessas 3 dimensões, poderíamos dizer que empréstimos de Home Improvement com valores abaixo de $10.000 tem boas chances de se tornarem inadimplentes.
+
+Uma aplicação bastante interessante aqui seria elaborar um modelo de machine learning utilizando métodos de aprendizagem supervisionada, classificando as operações históricas em duas variáveis categóricas (Delinquent e Good), para prever se um futuro ou atual empréstimo/mutuário potencialmente poderia se tornar inadimplente. 
+
+### 3.3 Terceiro Gráfico
+```{r echo=FALSE, warning=FALSE, Plot_Three}
+# Score por quantidade por inadimplência
+
+ggplot(aes(x = CreditScoreRangeUpper, y = LoanOriginalAmount), 
+       data = loans_subset) +
+  geom_point(aes(color = DelinquentBorrowers), alpha = 1/10) +
+  scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 100)) +
+  # Ajeitando o gráfico
+  ggtitle("Loan Amount by Credit Score by Borrower Status") +
+  labs(x = "Credit Score (0 - 1000)", y = "Loan Amount (USD)") +
+  theme(text = element_text(size = 11))
+
+```
+
+Por fim, nesse gráfico é possível observar uma certa clusterização. Mutuários com score próximo de 0 e próximo de 500 para empréstimos de $10.000 e próximo de 600 para empréstimos próximos de $20.000 tem boa chance de ser inadimplentes. Novamente, essa informação com machine learning poderia ser muito útil para aumentar a eficiência operacional da [Prosper.com](https://www.prosper.com).
+
+------
+
+## 4. Sumário e Reflexão
+
+### 4.1 Melhoria nos dados
+
+#### 4.1.1 Informações de geolocalização
+Existem muitos empréstimos onde o estado do mutuário não foi especificado. Uma melhoria para a [Prosper.com](https://www.prosper.com) seria deixar o preenchimento desse dado como obrigatório, até por uma questão de confirmação de onde o mutuário está. Adicionalmente, poderia ser adicionada a cidade do mutuário e a cidade do emprestador, de forma a entender onde a [Prosper.com](https://www.prosper.com) está tendo sucesso e onde é necessária maior ação de marketing ou comercial para ampliar os negócios.
+
+#### 4.1.2 Informações de propósito do empréstimo
+Novamente, existem muitos valores não especificados: "Not available" e "Other". Seria importante especificar, até para ajudar como medida de risco de futura inadimplência.
+
+#### 4.1.3 Informações de investidor
+Uma coisa que poderia ser aprimorada no [Prosper.com](https://www.prosper.com) são as informações sobre os investidores, de forma a verificar características de quem empresta dinheiro para futuramente promover mais o negócio e conseguir mais investidores.
+
+### 4.2 Descobertas
+
+A principal descoberta foi a concentração das operações da [Prosper.com](https://www.prosper.com) no Estado da Califórnia (13,9% de todos os empréstimos realizados no período). Foi interessante também  observar para que propósitos os empréstimos são realizados e quais suas características de inadimplência. Essa característica pode servir bastante para análise de c'redito conforme comentado (usando machine learning). Por fim, também foi possível verificar uma relação interessante entre valor do empréstimo, score de crédito do mutuário e situação do empréstimo (inadimplente ou não), que também pode ser usado com propósito de análise de créditos futuros.
+
+### 4.3 Trabalhos futuros
+
+Como trabalho futuro, conforme indicado no gráfico abaixo, pode-se analisar mais características do mutuário, como recomendações, bens e Prosper score, de forma a caracterizar melhor o bom pagador e o inadimplente. Isso aumentaria a eficiência operacional, criando um sistema de forecasting (usando algoritmos supervisionados de machine learning) indicando se um futuro empréstimo para um mutuário tem potencial de não ser pago ou de ser pago.
+
+```{r echo=FALSE, warning=FALSE, Future_work, fig.width=10, fig.height=10}
+
+# Set a seed
+theme_set(theme_minimal(20))
+
+# Variáveis de interesse para investigar correlação.
+# LoanStatus e ListingCategory foram retirados para visualização (categóricas)
+columns <- c('IsBorrowerHomeowner', 'Recommendations', 
+             'LoanOriginalAmount', 'ProsperScore')
+
+# Gerando matriz com plots das variáveis de interesse
+# Vamos colocar apenas 1000 amostras para não demorar muito
+
+loanData_subset <- loans[ , columns]
+
+ggpairs(loanData_subset[sample.int(nrow(loanData_subset), 1000), ]) +
+  theme(text = element_text(size = 11))
+
+```
+
+Outro trabalho futuro, muito interessante, é avaliar o potencial de crescimento do [Prosper.com](https://www.prosper.com) nos demais estados da costa leste, e decidir por abrir ou não um escritório em algum dos estados para ampliar o faturamento. Esse trabalho poderia incluir uma análise temporal da evolução dos empréstimos, inadimplência, taxas, por estado. Ficaria muito bacana!
+
+------
+
+## 5. Referências
+
+- Making Maps with R: http://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html
+- Customizing RStudio: https://support.rstudio.com/hc/en-us/articles/200549016-Customizing-RStudio#editing
+- Create an R Function to Convert State Codes to Full State Name: https://favorableoutcomes.wordpress.com/2012/10/19/create-an-r-function-to-convert-state-codes-to-full-state-name/
+- Diamonds Exploration, Chris Saden: https://s3.amazonaws.com/content.udacity-data.com/courses/ud651/diamondsExample_2016-05.html 
+- Climatology of Atlantic Hurricanes, Dean D. Churchill, Ph.D.: https://s3.amazonaws.com/udacity-hosted-downloads/ud651/AtlanticHurricaneTracking.html 
+- Geography Of American Music, Stefan Zapf: https://s3.amazonaws.com/udacity-hosted-downloads/ud651/GeographyOfAmericanMusic.html 
+- Advanced R by Hadley Wickham: http://adv-r.had.co.nz/Style.html 
+- Using in R Markdown: https://rstudio.github.io/dygraphs/r-markdown.html
