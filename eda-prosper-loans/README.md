@@ -1,5 +1,4 @@
 # Exploratory Data Analysis of [Prosper.com](https://www.prosper.com) Loans
-========================================================
 ### Rafael Buck
 
 
