@@ -14,7 +14,4 @@ Neste projeto, vou apresentar uma análise de dados exploratórios em um conjunt
 Um modelo de código é fornecido no arquivo Rmd `Exploratory Analysis of Prosper Loans.Rmd`.
 
 ### Execução
-Execute no R Studio, com os seguintes arquivos no mesmo diretório
-
-```Exploratory Analysis of Prosper Loans.Rmd```  
-```prosperLoanData.csv```
+Execute o arquivo ```Exploratory Analysis of Prosper Loans.Rmd``` no R Studio, com os seguintes baixando o aqruiovo ```prosperLoanData.csv``` e colocando-o no mesmo diretório.
