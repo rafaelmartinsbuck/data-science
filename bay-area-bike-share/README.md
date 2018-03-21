@@ -1,23 +1,29 @@
-This folder contains files for P0: Analyze Bay Area Bike Share Data.
+# Bay Area Bike Share Project
 
-Bay\_Area\_Bike\_Share\_Analysis.ipynb - Main project file.
+### Projeto Final do Nanodegree Fundamentos de Data Science I: Análise dos dados da Bay Area Bike Share.
 
-babs\_datacheck.py; babs\_visualizations.py - Supplemental scripts for checking
-data wrangling, reporting of basic statistics, and creation of exploratory bar
-charts and histograms.
+Bay Area Bike Share é uma empresa que oferece um serviço de aluguel de bicicletas sob demanda.
+A empresa possui varias estações que se encontram espalhadas nas cidades de San Francisco, Redwood City, Palo Alto, Mountain View, 
+e San Jose, onde os clientes podem desbloquear a bicicleta em qualquer estação e devolver em outra.
 
-Data is split among twelve other files, organized into three sets of four files
-each. Prefixing each set is one of three datestamps, showing the end month for
-each data collection period (201402, 201408, 201508). Suffixes for each file
-indicate contents:
+O projeto possui arquivos em csv que constam informações como localização das estações, informações das viagens e o tempo naquela região.
 
-\*\_README.txt - Information about contents of data files.
+### Instalação
+Este projeto requer **Python 3.5** e as seguintes bibliotecas Python instaladas:
 
-\*\_station\_data.csv - Basic information about station locations and
-capacities.
+- [NumPy](http://www.numpy.org/)
+- [Pandas](http://pandas.pydata.org/)
+- [scikit-learn](http://scikit-learn.org/stable/)
 
-\*\_trip\_data.csv - Information about each trip taken using the bike share
-system.
+Você também precisará ter software instalado para rodar e executar um [iPython Notebook](http://ipython.org/notebook.html)
 
-\*\_weather\_data.csv - Weather information by day for one station in each
-city in the bike share program.
+### Código
+Um modelo de código é fornecido no arquivo notebook `Analise_Bay_Area_Bike_Share.ipynb`. Mesmo que parte do código já tenha sido fornecida para ajudá-lo a começar, você precisará implementar funcionalidades adicionais em alguns pontos para conseguir completar o projeto com sucesso.
+
+### Execução
+Em um terminal ou janela de comando, navegue até o diretório raiz de projeto (que contém este README) e execute os seguintes comandos:
+
+```ipython notebook Analise_Bay_Area_Bike_Share.ipynb```  
+```jupyter notebook Analise_Bay_Area_Bike_Share.ipynb```
+
+Isso abrirá o o software e arquivo de projeto Jupyter Notebook em seu navegador.
