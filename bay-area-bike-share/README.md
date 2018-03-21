@@ -13,7 +13,6 @@ Este projeto requer **Python 3.5** e as seguintes bibliotecas Python instaladas:
 
 - [NumPy](http://www.numpy.org/)
 - [Pandas](http://pandas.pydata.org/)
-- [scikit-learn](http://scikit-learn.org/stable/)
 
 Você também precisará ter software instalado para rodar e executar um [iPython Notebook](http://ipython.org/notebook.html)
 
